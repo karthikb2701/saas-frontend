@@ -6,6 +6,7 @@ import Orders from "./pages/Orders";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Payment from "./pages/Payment";
 import OrderSuccess from "./pages/OrderSuccess";
+import Upgrade from "./pages/Upgrade";
 
 export default function App() {
   return (
@@ -53,6 +54,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <OrderSuccess />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/upgrade"
+        element={
+          <ProtectedRoute>
+            <Upgrade />
           </ProtectedRoute>
         }
       />
