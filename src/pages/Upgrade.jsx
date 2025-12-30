@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 
+/* 🔹 Load Razorpay script */
+const loadRazorpay = () =>
+  new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
 export default function Upgrade() {
   const [plans, setPlans] = useState([]);
   const [currentPlan, setCurrentPlan] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  /* 🔹 Fetch plans + current subscription */
   useEffect(() => {
     api.get("/subscription/plans").then((res) => {
       setPlans(res.data.plans);
@@ -14,6 +26,54 @@ export default function Upgrade() {
       setCurrentPlan(res.data.name);
     });
   }, []);
+
+  /* 🔹 Upgrade handler */
+  const upgradePlan = async (planId) => {
+    try {
+      setLoading(true);
+
+      const loaded = await loadRazorpay();
+      if (!loaded) {
+        alert("Razorpay SDK failed to load. Check internet.");
+        return;
+      }
+
+      // 1️⃣ Create payment order from backend
+      const { data: order } = await api.post("/payments/create", { planId });
+
+      // 2️⃣ Razorpay options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: "INR",
+        order_id: order.id,
+        name: "Bakery SaaS",
+        description: "Subscription Upgrade",
+        handler: async function (response) {
+          // 3️⃣ Verify payment
+          await api.post("/payments/verify", {
+            ...response,
+            planId,
+          });
+
+          alert("🎉 Subscription upgraded successfully!");
+          window.location.reload();
+        },
+        theme: {
+          color: "#2563eb",
+        },
+      };
+
+      // 4️⃣ Open Razorpay popup
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -42,18 +102,17 @@ export default function Upgrade() {
             {plan.name === currentPlan ? (
               <button
                 disabled
-                className="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed"
+                className="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed w-full"
               >
                 Current Plan
               </button>
             ) : (
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                onClick={() =>
-                  alert(`Upgrade to ${plan.name} (payment coming soon)`)
-                }
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full disabled:opacity-60"
+                onClick={() => upgradePlan(plan.id)}
               >
-                Upgrade
+                {loading ? "Processing..." : "Upgrade"}
               </button>
             )}
           </div>
