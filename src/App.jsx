@@ -8,6 +8,8 @@ import Payment from "./pages/Payment";
 import OrderSuccess from "./pages/OrderSuccess";
 import Upgrade from "./pages/Upgrade";
 
+import Subscription from "./pages/Subscription";
+
 export default function App() {
   return (
     <Routes>
@@ -63,6 +65,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Upgrade />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <Subscription />
           </ProtectedRoute>
         }
       />
