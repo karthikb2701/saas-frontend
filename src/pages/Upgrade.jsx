@@ -50,14 +50,26 @@ export default function Upgrade() {
         name: "Bakery SaaS",
         description: "Subscription Upgrade",
         handler: async function (response) {
-          // 3️⃣ Verify payment
-          await api.post("/payments/verify", {
-            ...response,
-            planId,
-          });
+          try {
+            // 3️⃣ Verify payment
+            console.log("Payment response:", response);
+            const verifyRes = await api.post("/payments/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              planId,
+            });
 
-          alert("🎉 Subscription upgraded successfully!");
-          window.location.reload();
+            console.log("Verification response:", verifyRes.data);
+            alert("🎉 Subscription upgraded successfully!");
+            window.location.reload();
+          } catch (verifyErr) {
+            console.error("Payment verification error:", verifyErr);
+            alert(
+              verifyErr.response?.data?.message ||
+                "Payment verification failed. Please contact support."
+            );
+          }
         },
         theme: {
           color: "#2563eb",
